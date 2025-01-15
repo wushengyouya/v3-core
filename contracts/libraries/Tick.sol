@@ -127,6 +127,9 @@ library Tick {
 
         require(liquidityGrossAfter <= maxLiquidity, 'LO');
 
+        // 更容易理解的写法
+        // flipped = (liquidityGrossBefore == 0 && liquidityGrossAfter > 0) // 激活流动性
+        //            || (liquidityGrossBefore > 0 && liquidityGrossAfter == 0); // 停用流动性
         flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
 
         if (liquidityGrossBefore == 0) {
@@ -141,8 +144,10 @@ library Tick {
             info.initialized = true;
         }
 
+        // update the total liquidity of current tick / 更新当前tick的总流动性
         info.liquidityGross = liquidityGrossAfter;
 
+        // TODO: understand
         // when the lower (upper) tick is crossed left to right (right to left), liquidity must be added (removed)
         info.liquidityNet = upper
             ? int256(info.liquidityNet).sub(liquidityDelta).toInt128()
