@@ -5,6 +5,9 @@ import './interfaces/IUniswapV3PoolDeployer.sol';
 
 import './UniswapV3Pool.sol';
 
+/**
+ * @title pool部署抽象合约
+ */
 contract UniswapV3PoolDeployer is IUniswapV3PoolDeployer {
     struct Parameters {
         address factory;
@@ -32,6 +35,7 @@ contract UniswapV3PoolDeployer is IUniswapV3PoolDeployer {
         int24 tickSpacing
     ) internal returns (address pool) {
         parameters = Parameters({factory: factory, token0: token0, token1: token1, fee: fee, tickSpacing: tickSpacing});
+        // 通过create2创建Pool合约
         pool = address(new UniswapV3Pool{salt: keccak256(abi.encode(token0, token1, fee))}());
         delete parameters;
     }

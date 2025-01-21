@@ -121,10 +121,12 @@ library Tick {
         uint128 maxLiquidity
     ) internal returns (bool flipped) {
         Tick.Info storage info = self[tick];
-
+        // 当前的tick的所有流动性
         uint128 liquidityGrossBefore = info.liquidityGross;
+        // 添加新的流动性
         uint128 liquidityGrossAfter = LiquidityMath.addDelta(liquidityGrossBefore, liquidityDelta);
 
+        // 更新后的流动性必须小于最大流动性
         require(liquidityGrossAfter <= maxLiquidity, 'LO');
 
         // 更容易理解的写法
@@ -132,7 +134,10 @@ library Tick {
         //            || (liquidityGrossBefore > 0 && liquidityGrossAfter == 0); // 停用流动性
         flipped = (liquidityGrossAfter == 0) != (liquidityGrossBefore == 0);
 
+        // liquidityGrossBefore为0,就初始化
         if (liquidityGrossBefore == 0) {
+            // tick 有可能为lowerTick或者upperTick
+            // lowerTick----currentTick------upperTick
             // by convention, we assume that all growth before a tick was initialized happened _below_ the tick
             if (tick <= tickCurrent) {
                 info.feeGrowthOutside0X128 = feeGrowthGlobal0X128;
@@ -141,6 +146,7 @@ library Tick {
                 info.tickCumulativeOutside = tickCumulative;
                 info.secondsOutside = time;
             }
+            // 初始化状态标记为true
             info.initialized = true;
         }
 
@@ -161,6 +167,7 @@ library Tick {
         delete self[tick];
     }
 
+    // TODO:understand
     /// @notice Transitions to next tick as needed by price movement
     /// @param self The mapping containing all tick information for initialized ticks
     /// @param tick The destination tick of the transition

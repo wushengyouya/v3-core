@@ -36,6 +36,7 @@ library SqrtPriceMath {
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
 
         if (add) {
+            // 根据投入的token0，流动性，计算交换后的价格
             uint256 product;
             if ((product = amount * sqrtPX96) / amount == sqrtPX96) {
                 uint256 denominator = numerator1 + product;
@@ -73,22 +74,21 @@ library SqrtPriceMath {
     ) internal pure returns (uint160) {
         // if we're adding (subtracting), rounding down requires rounding the quotient down (up)
         // in both cases, avoid a mulDiv for most inputs
+        // 根据投入的token1，流动性，计算交换后的价格
         if (add) {
-            uint256 quotient =
-                (
-                    amount <= type(uint160).max
-                        ? (amount << FixedPoint96.RESOLUTION) / liquidity
-                        : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
-                );
+            uint256 quotient = (
+                amount <= type(uint160).max
+                    ? (amount << FixedPoint96.RESOLUTION) / liquidity
+                    : FullMath.mulDiv(amount, FixedPoint96.Q96, liquidity)
+            );
 
             return uint256(sqrtPX96).add(quotient).toUint160();
         } else {
-            uint256 quotient =
-                (
-                    amount <= type(uint160).max
-                        ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
-                        : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
-                );
+            uint256 quotient = (
+                amount <= type(uint160).max
+                    ? UnsafeMath.divRoundingUp(amount << FixedPoint96.RESOLUTION, liquidity)
+                    : FullMath.mulDivRoundingUp(amount, FixedPoint96.Q96, liquidity)
+            );
 
             require(sqrtPX96 > quotient);
             // always fits 160 bits
@@ -158,12 +158,16 @@ library SqrtPriceMath {
     ) internal pure returns (uint256 amount0) {
         if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
 
+        // 左移96位是为了与价格保持精度一致
+        // uint256(liquidity) << FixedPoint96.RESOLUTION = uint256(liquidity) * 2^96
         uint256 numerator1 = uint256(liquidity) << FixedPoint96.RESOLUTION;
         uint256 numerator2 = sqrtRatioBX96 - sqrtRatioAX96;
 
         require(sqrtRatioAX96 > 0);
 
         return
+            // 原公式： (liquidity * 2^96 * (sqrtRatioBX96 - sqrtRatioAX96)) / (sqrtRatioBX96 * sqrtRatioAX96)
+            // 当前代码公式：[(liquidity * 2^96 * (sqrtRatioBX96 - sqrtRatioAX96)) / sqrtRatioBX96]/ sqrtRatioAX96
             roundUp
                 ? UnsafeMath.divRoundingUp(
                     FullMath.mulDivRoundingUp(numerator1, numerator2, sqrtRatioBX96),
@@ -187,6 +191,7 @@ library SqrtPriceMath {
     ) internal pure returns (uint256 amount1) {
         if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
 
+        // liquidity * (sqrtRatioBX96 - sqrtRatioAX96) / 定点数
         return
             roundUp
                 ? FullMath.mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96)

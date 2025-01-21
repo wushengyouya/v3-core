@@ -24,24 +24,21 @@ library SwapMath {
         uint128 liquidity,
         int256 amountRemaining,
         uint24 feePips
-    )
-        internal
-        pure
-        returns (
-            uint160 sqrtRatioNextX96,
-            uint256 amountIn,
-            uint256 amountOut,
-            uint256 feeAmount
-        )
-    {
+    ) internal pure returns (uint160 sqrtRatioNextX96, uint256 amountIn, uint256 amountOut, uint256 feeAmount) {
+        // zero -> one,价格下降
         bool zeroForOne = sqrtRatioCurrentX96 >= sqrtRatioTargetX96;
         bool exactIn = amountRemaining >= 0;
-
+        // 计算交换后的目标价格是多少
         if (exactIn) {
+            // 确定输入的token数量
+            // 减去手续费剩下的swap金额
             uint256 amountRemainingLessFee = FullMath.mulDiv(uint256(amountRemaining), 1e6 - feePips, 1e6);
+
+            // 计算需要投入的金额
             amountIn = zeroForOne
                 ? SqrtPriceMath.getAmount0Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, true)
                 : SqrtPriceMath.getAmount1Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, true);
+            // 说明传入的token数量足够
             if (amountRemainingLessFee >= amountIn) sqrtRatioNextX96 = sqrtRatioTargetX96;
             else
                 sqrtRatioNextX96 = SqrtPriceMath.getNextSqrtPriceFromInput(
@@ -51,6 +48,7 @@ library SwapMath {
                     zeroForOne
                 );
         } else {
+            // 确定输出的token数量
             amountOut = zeroForOne
                 ? SqrtPriceMath.getAmount1Delta(sqrtRatioTargetX96, sqrtRatioCurrentX96, liquidity, false)
                 : SqrtPriceMath.getAmount0Delta(sqrtRatioCurrentX96, sqrtRatioTargetX96, liquidity, false);
@@ -66,6 +64,7 @@ library SwapMath {
 
         bool max = sqrtRatioTargetX96 == sqrtRatioNextX96;
 
+        // 根据上面计算出的目标价格，再计算出amountIn,amountOut
         // get the input/output amounts
         if (zeroForOne) {
             amountIn = max && exactIn
@@ -84,6 +83,7 @@ library SwapMath {
         }
 
         // cap the output amount to not exceed the remaining output amount
+        // 判断amountOut是否超出需求数量
         if (!exactIn && amountOut > uint256(-amountRemaining)) {
             amountOut = uint256(-amountRemaining);
         }
